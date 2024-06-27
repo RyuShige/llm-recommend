@@ -66,8 +66,11 @@ def recommend_movies(user_movies, desired_features, top_k=5):
     
     # 類似度の高い映画を検索
     distances, indices = index.search(query_vector.astype('float32'), top_k)
-    
+
     recommended_movies = movies_df.iloc[indices[0]]
+
+    # ユーザーが選択した映画を除外
+    recommended_movies = recommended_movies[~recommended_movies['movieId'].isin(user_movies)]
     
     return recommended_movies
 
@@ -78,7 +81,7 @@ def generate_recommendation_reason(movie, user_movies, desired_features):
     prompt += f"希望する特徴は「{desired_features}」です。この映画が推薦された理由を2文で説明してください。"
 
     generator = pipeline('text-generation', model='gpt2')
-    reason = generator(prompt, max_length=100, num_return_sequences=1)[0]['generated_text']
+    reason = generator(prompt, max_length=200, num_return_sequences=1)[0]['generated_text']
     
     return reason.strip()
 

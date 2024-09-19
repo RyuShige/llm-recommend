@@ -42,6 +42,7 @@ import streamlit as st
 
 # movies_df = pd.DataFrame(movies_data)
 movies_df = pd.read_json('movies.json')
+# DB接続が理想
 
 print(movies_df.head())
 

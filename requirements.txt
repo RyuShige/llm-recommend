@@ -2,3 +2,5 @@ altair
 pandas
 streamlit
 sentence_transformers
+faiss
+transformers

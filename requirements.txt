@@ -4,3 +4,4 @@ streamlit
 sentence_transformers
 faiss-cpu
 transformers
+openai

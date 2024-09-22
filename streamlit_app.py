@@ -8,9 +8,7 @@ import streamlit as st
 import zipfile
 import os
 from openai import OpenAI
-from dotenv import load_dotenv
 
-load_dotenv()
 client = OpenAI()
 client.api_key = st.secrets["OPENAI_API_KEY"]
 

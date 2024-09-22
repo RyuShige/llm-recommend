@@ -12,7 +12,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 client = OpenAI()
-client.api_key = os.getenv('OPENAI_API_KEY')
+client.api_key = st.secrets["OPENAI_API_KEY"]
 
 # 映画データの読み込み
 zip_file_path = 'movie_info.zip'

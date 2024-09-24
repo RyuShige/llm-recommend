@@ -1,29 +1,30 @@
-import pandas as pd
 import numpy as np
-from sentence_transformers import SentenceTransformer
-from sklearn.metrics.pairwise import cosine_similarity
 import faiss
-from transformers import pipeline
 import streamlit as st
 import zipfile
-import os
 from openai import OpenAI
+import re
+import requests
 
 client = OpenAI()
 client.api_key = st.secrets["OPENAI_API_KEY"]
+omdb_api_ky = st.secrets["OMDB_API_KEY"]
 
 # 映画データの読み込み
 zip_file_path = 'movie_info.zip'
 
 with zipfile.ZipFile(zip_file_path, 'r') as z:
     # ZIPファイル内のファイルリストを取得
-    file_list = z.namelist() # ['title.npy', 'id_to_emb.npy']
+    file_list = z.namelist()
     file_list = sorted(file_list)
+    print(file_list)
 
     # CSVファイルを指定して読み込む
     with z.open(file_list[0]) as id2emb:
         id2emb = np.load(id2emb, allow_pickle=True)
-    with z.open(file_list[1]) as movie_title:
+    with z.open(file_list[1]) as movie_description:
+        movie_description = np.load(movie_description, allow_pickle=True)
+    with z.open(file_list[2]) as movie_title:
         movie_title = np.load(movie_title, allow_pickle=True)
     
 index = faiss.read_index('movie_index.faiss')
@@ -55,17 +56,31 @@ def recommend_movies(user_movies, query, top_k=5):
 
     return recommended_movies
 
-# 推薦理由生成のための関数
-def generate_recommendation_reason(movie, user_movies, query):
-    # prompt = f"以下の映画が推薦されました：{movie_title[movie]}。" # 埋め込みなしのdfを読み込む手はある
-    # # prompt += f"ユーザーが好きな映画は{', '.join(movies_df[movies_df['id'].isin(user_movies)]['title'].tolist())}で、"
-    # prompt += f"希望する特徴は「{query}」です。あなたの知識に基づいて、この映画が推薦された理由を2文で説明してください。" # ここにRAGを入れる、ほんとはそのまえに候補を多くしておいてリランクも入れたい
-
+def rerank(user_movies, query):
+    movie_desc = [{movie_title[m]: f'index:{m}:概要{movie_description[m]}'} for m in user_movies] 
     response = client.chat.completions.create(
         model="gpt-4o",
         messages=[
             {"role": "system", "content": "あなたは優秀な映画ライターです。"},
-            {"role": "user", "content": f"以下の映画が推薦されました：{movie_title[movie]}\nユーザが希望していた特徴は「{query}」です。\nあなたの知識に基づいて、この映画が推薦された理由を3文で説明してください。"}
+            {"role": "user", "content": f"以下の映画が推薦されました：{movie_desc}\nユーザが希望していた$特徴$は「{query}」です。\n$特徴$に合わせて、おすすめ順に映画を並び替えて、**映画のindexのみ**を出力してください。\n出力形式はpythonの配列でお願いします。"}
+        ],
+        temperature=1.2,
+        max_tokens=500,
+    )
+    list = re.findall(r'\d+', response.choices[0].message.content.strip())
+    rerank_index = [int(l) for l in list]
+    return rerank_index
+
+# 推薦理由生成のための関数
+def generate_recommendation_reason(movie, query):
+    # prompt = f"以下の映画が推薦されました：{movie_title[movie]}。" # 埋め込みなしのdfを読み込む手はある
+    # # prompt += f"ユーザーが好きな映画は{', '.join(movies_df[movies_df['id'].isin(user_movies)]['title'].tolist())}で、"
+    # prompt += f"希望する特徴は「{query}」です。あなたの知識に基づいて、この映画が推薦された理由を2文で説明してください。" # ここにRAGを入れる、ほんとはそのまえに候補を多くしておいてリランクも入れたい
+    response = client.chat.completions.create(
+        model="gpt-4o",
+        messages=[
+            {"role": "system", "content": "あなたは優秀な映画ライターです。"},
+            {"role": "user", "content": f"以下の映画が推薦されました：{movie_title[movie]}\nユーザが希望していた特徴は「{query}」です。\n{movie_description[movie]}に基づいて、この映画のおすすめポイントをわかりやすく簡潔に2文以内で説明してください。"}
         ],
         temperature=1.2,
         max_tokens=500,
@@ -87,16 +102,51 @@ if st.button('おすすめの映画を表示'):
         # ユーザーが選択した映画のIDを取得
         user_movie_ids = [np.where(movie_title == movie)[0][0] for movie in user_movies]
         recommended_movies = recommend_movies(user_movie_ids, query, 10)
+        recommended_movies = rerank(recommended_movies, query)
+        
+        # for i, movie in enumerate(recommended_movies):
+        #     if i > 4:
+        #         break
+        #     st.subheader(movie_title[movie])
+        #     # st.write(f"ジャンル: {movie['genres']}")
+        #     # st.write(f"説明: {movie['description']}")
+        #     reason = generate_recommendation_reason(movie, query)
+        #     st.write(f"推薦理由: {reason}")
+        #     if i > 3:
+        #         break
         
         for i, movie in enumerate(recommended_movies):
-            st.subheader(movie_title[movie])
-            # st.write(f"ジャンル: {movie['genres']}")
-            # st.write(f"説明: {movie['description']}")
-            reason = generate_recommendation_reason(movie, user_movie_ids, query)
-            st.write(f"推薦理由: {reason}")
-            if i > 3:
+            if i > 4:
                 break
+            
+            # 映画のタイトルを取得
+            title = movie_title[movie]
+    
+            st.subheader(title)
+            
+            # OMDB APIを使ってポスター画像を取得
+            api_key = '879fb267'  # OMDB APIキーを設定
+            params = {
+                'apikey': omdb_api_ky,
+                't': title
+            }
+            response = requests.get('http://www.omdbapi.com/', params=params)
+            
+            if response.status_code == 200:
+                data = response.json()
+                if data.get('Response') == 'True':
+                    poster_url = data.get('Poster')
+                    if poster_url and poster_url != 'N/A':
+                        st.image(poster_url, use_column_width='auto')
+                    else:
+                        st.write('ポスター画像が見つかりませんでした。')
+                else:
+                    st.write('映画情報が見つかりませんでした。')
+            else:
+                st.write('OMDB APIへのリクエストに失敗しました。')
+            
+            # 推薦理由を表示
+            reason = generate_recommendation_reason(movie, query)
+            st.write(f"推薦理由: {reason}")
     else:
         st.write('映画を選択し、希望する特徴を入力してください。')
-
-# 埋め込み可視化したいな

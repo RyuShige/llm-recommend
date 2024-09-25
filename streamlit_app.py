@@ -17,7 +17,6 @@ with zipfile.ZipFile(zip_file_path, 'r') as z:
     # ZIPファイル内のファイルリストを取得
     file_list = z.namelist()
     file_list = sorted(file_list)
-    print(file_list)
 
     # CSVファイルを指定して読み込む
     with z.open(file_list[0]) as id2emb:
@@ -39,21 +38,14 @@ def recommend_movies(user_movies, query, top_k=5):
     for movie in user_movies:
         query_vector += np.array(id2emb[movie])
 
-    print(f"クエリベクトルの次元: {np.array([query_vector]).shape}")
-    print(f"インデックスの次元: {index.d}")
-
     # 類似度の高い映画を検索
     distances, indices = index.search(np.array([query_vector]).astype('float32'), top_k)
 
     recommended_movies = indices[0]
 
-    print(f"推薦された映画のインデックス: {recommended_movies}")
-
     # ユーザーが選択した映画を除外
     recommended_movies = recommended_movies[~np.isin(recommended_movies, user_movies)]
     
-    print(f"ユーザーが選択した映画を除外した映画のインデックス: {recommended_movies}")
-
     return recommended_movies
 
 def rerank(user_movies, query):
@@ -108,11 +100,11 @@ if st.button('おすすめの映画を表示'):
         for i, movie in enumerate(recommended_movies):
             if i > 4:
                 break
-            
+            print(i)
             # 映画のタイトルを取得
             title = movie_title[movie]
     
-            st.subheader(title)
+            st.subheader(title, anchor=False)
             
             # OMDB APIを使ってポスター画像を取得
             api_key = '879fb267'  # OMDB APIキーを設定
@@ -126,6 +118,8 @@ if st.button('おすすめの映画を表示'):
                 data = response.json()
                 if data.get('Response') == 'True':
                     poster_url = data.get('Poster')
+                    imdb_id = data.get('imdbID')
+                    imdb_url = f"https://www.imdb.com/title/{imdb_id}/"
                     if poster_url and poster_url != 'N/A':
                         st.image(poster_url, use_column_width='auto')
                     else:
@@ -137,6 +131,6 @@ if st.button('おすすめの映画を表示'):
             
             # 推薦理由を表示
             reason = generate_recommendation_reason(movie, query)
-            st.write(f"推薦理由: {reason}")
+            st.markdown(f"**推薦理由:** {reason}[映画詳細ページ]({imdb_url})", unsafe_allow_html=True)
     else:
         st.write('映画を選択し、希望する特徴を入力してください。')

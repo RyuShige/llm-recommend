@@ -34,12 +34,18 @@ def recommend_movies(user_movies, query, top_k=5):
     # クエリをベクトル化
     query_vector = np.array(client.embeddings.create(input = [query], model='text-embedding-3-large').data[0].embedding)
 
-    # user_moviesの映画のベクトルを加算
-    for movie in user_movies:
-        query_vector += np.array(id2emb[movie])
+    # # user_moviesの映画のベクトルを加算
+    # for movie in user_movies:
+    #     query_vector += np.array(id2emb[movie])
+
+    # ベクトルの平均化
+    vectors = [np.array(id2emb[movie]) for movie in user_movies]
+    vectors.append(query_vector)
+    # ベクトルの平均を計算
+    average_vector = np.mean(vectors, axis=0)
 
     # 類似度の高い映画を検索
-    distances, indices = index.search(np.array([query_vector]).astype('float32'), top_k)
+    distances, indices = index.search(np.array([average_vector]).astype('float32'), top_k)
 
     recommended_movies = indices[0]
 
@@ -100,7 +106,7 @@ if st.button('おすすめの映画を表示'):
         for i, movie in enumerate(recommended_movies):
             if i > 4:
                 break
-            print(i)
+
             # 映画のタイトルを取得
             title = movie_title[movie]
     

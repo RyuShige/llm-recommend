@@ -105,17 +105,6 @@ if st.button('おすすめの映画を表示'):
         recommended_movies = recommend_movies(user_movie_ids, query, 10)
         recommended_movies = rerank(recommended_movies, query)
         
-        # for i, movie in enumerate(recommended_movies):
-        #     if i > 4:
-        #         break
-        #     st.subheader(movie_title[movie])
-        #     # st.write(f"ジャンル: {movie['genres']}")
-        #     # st.write(f"説明: {movie['description']}")
-        #     reason = generate_recommendation_reason(movie, query)
-        #     st.write(f"推薦理由: {reason}")
-        #     if i > 3:
-        #         break
-        
         for i, movie in enumerate(recommended_movies):
             if i > 4:
                 break

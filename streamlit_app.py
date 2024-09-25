@@ -87,7 +87,7 @@ def generate_recommendation_reason(movie, query):
     return response.choices[0].message.content.strip()
 
 # Streamlitを使用したシンプルなUIの作成
-st.title('Netflixの映画とドラマをおすすめ！')
+st.header('Netflixの映画とドラマをおすすめ！')
 
 # ユーザーが映画を選択
 user_movies = st.multiselect('好きな映画・ドラマを選択してください', movie_title)
@@ -96,7 +96,7 @@ user_movies = st.multiselect('好きな映画・ドラマを選択してくだ�
 query = st.text_input('今みたい映画・ドラマの特徴やジャンルを入力してください')
 
 if st.button('おすすめの映画を表示'):
-    st.write('**あなたが好きな映画・ドラマと今みたい気分にあわせたレコメンド**', )
+    st.write('**あなたが好きな映画・ドラマと今みたい気分にあわせたおすすめ！**', )
     if user_movies and query:
         # ユーザーが選択した映画のIDを取得
         user_movie_ids = [np.where(movie_title == movie)[0][0] for movie in user_movies]

@@ -40,7 +40,7 @@ def recommend_movies(user_movies, query, top_k=5):
 
     # ベクトルの平均化
     vectors = [np.array(id2emb[movie]) for movie in user_movies]
-    vectors.append(query_vector)
+    vectors.append(query_vector) # 現在は単純にクエリとユーザの過去の好みを足しているだけ、UXUIによってアルゴリズムを変更したい
     # ベクトルの平均を計算
     average_vector = np.mean(vectors, axis=0)
 
@@ -86,7 +86,7 @@ def generate_recommendation_reason(movie, query):
     
     return response.choices[0].message.content.strip()
 
-# Streamlitを使用したシンプルなUIの作成
+# UIの作成
 st.header('Netflixの映画とドラマをおすすめ！', anchor=False)
 
 # ユーザーが映画を選択
@@ -94,9 +94,10 @@ user_movies = st.multiselect('好きな映画・ドラマを選択してくだ�
 
 # ユーザーが希望する特徴を入力
 query = st.text_input('今みたい映画・ドラマの特徴やジャンルを入力してください')
+# st.write('data source: F. Maxwell Harper and Joseph A. Konstan. 2015. The MovieLens Datasets: History and Context. ACM TiiS 5(4)')
 
 if st.button('おすすめの映画を表示'):
-    st.write('**あなたが好きな映画・ドラマと今みたい気分にあわせたおすすめ！**', )
+    # st.write('**あなたが好きな映画・ドラマと今みたい気分にあわせたおすすめ！**', )
     if user_movies and query:
         # ユーザーが選択した映画のIDを取得
         user_movie_ids = [np.where(movie_title == movie)[0][0] for movie in user_movies]
@@ -113,7 +114,6 @@ if st.button('おすすめの映画を表示'):
             st.subheader(title, anchor=False)
             
             # OMDB APIを使ってポスター画像を取得
-            api_key = '879fb267'  # OMDB APIキーを設定
             params = {
                 'apikey': omdb_api_ky,
                 't': title

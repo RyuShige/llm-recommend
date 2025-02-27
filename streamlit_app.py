@@ -54,8 +54,8 @@ def recommend_movies(user_movies, query, top_k=5):
     
     return recommended_movies
 
-def rerank(user_movies, query):
-    movie_desc = [{movie_title[m]: f'index:{m}:概要{movie_description[m]}'} for m in user_movies] 
+def rerank(recommend_movies, query):
+    movie_desc = [{movie_title[m]: f'index:{m}:概要{movie_description[m]}'} for m in recommend_movies] 
     response = client.chat.completions.create(
         model="gpt-4o",
         messages=[

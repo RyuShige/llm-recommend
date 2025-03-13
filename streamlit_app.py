@@ -80,11 +80,11 @@ if 'random_movies' not in st.session_state:
     st.session_state['random_movies'] = get_random_movies()
 
 # ランダムボタンの配置
-if st.button('ランダム'):
+if st.button('シャッフル'):
     st.session_state['random_movies'] = get_random_movies()
 
 # ランダムに選択された映画の表示
-st.subheader('おすすめの映画・ドラマ')
+st.subheader('好きな作品を選択してね')
 cols = st.columns(4)
 for idx, movie in enumerate(st.session_state['random_movies']):
     if movie:
@@ -92,7 +92,7 @@ for idx, movie in enumerate(st.session_state['random_movies']):
             if movie['poster_url'] and movie['poster_url'] != 'N/A':
                 st.image(movie['poster_url'], use_column_width='auto')
             st.markdown(f"**[{movie['title']}](https://www.imdb.com/title/{movie['imdb_id']}/)**")
-            if st.button(f"選択: {movie['title']}", key=movie['imdb_id']):
+            if st.button(f"{movie['title']}", key=movie['imdb_id']):
                 st.session_state['user_movies'].append(movie['title'])
                 st.success(f"{movie['title']} を選択しました。")
 
@@ -102,10 +102,11 @@ if st.session_state['user_movies']:
     st.write(', '.join(st.session_state['user_movies']))
 
 # ユーザーが希望する特徴を入力
-query = st.text_input('今みたい映画・ドラマの特徴やジャンルを入力してください')
+st.subheader('今みたい映画・ドラマの特徴やジャンルを入力してね')
+query = st.text_input('')
 
 # おすすめの映画を表示
-if st.button('おすすめの映画を表示'):
+if st.button('おすすめの映画を表示') or query:
     if st.session_state['user_movies'] and query:
         user_movie_ids = [np.where(movie_title == movie)[0][0] for movie in st.session_state['user_movies']]
         recommended_movies = recommend_movies(user_movie_ids, query, 10)
